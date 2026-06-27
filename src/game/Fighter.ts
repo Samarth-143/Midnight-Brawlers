@@ -33,6 +33,7 @@ export interface AttackDef {
   activeEnd: number;
   duration: number; // seconds
   lunge: number; // forward movement applied during the swing (px)
+  radial?: boolean; // hits in a circle around the body, ignoring facing
 }
 
 let NEXT_ID = 1;
@@ -193,9 +194,20 @@ export abstract class Fighter {
     if (!this.attack) {
       return null;
     }
+    if (this.attack.radial) {
+      // Symmetric blast around the body (e.g. the boss shockwave).
+      return { lo: this.x - this.attack.reach, hi: this.x + this.attack.reach };
+    }
     const front = this.x + this.facing * this.halfWidth;
     const tip = front + this.facing * this.attack.reach;
     return { lo: Math.min(front, tip), hi: Math.max(front, tip) };
+  }
+
+  heal(amount: number): void {
+    if (!this.alive) {
+      return;
+    }
+    this.hp = Math.min(this.maxHp, this.hp + amount);
   }
 
   takeHit(

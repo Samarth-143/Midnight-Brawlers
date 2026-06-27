@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_WIDTH, GAME_HEIGHT, groundY, depthScale, Phaserish } from './config';
 import { AUDIO } from './manifest';
 import { Controls } from './input';
+import { TouchControls } from './touch';
 import { Hero } from './Hero';
 import { Enemy } from './Enemy';
 import { Prop } from './Prop';
@@ -59,6 +60,12 @@ export class GameScene extends Phaser.Scene {
   private enemies: Enemy[] = [];
   private props: Prop[] = [];
   private droppedBats: { x: number; depth: number; img: Phaser.GameObjects.Image }[] = [];
+  private healthPickups: {
+    x: number;
+    depth: number;
+    amount: number;
+    obj: Phaser.GameObjects.Container;
+  }[] = [];
 
   private sky!: Phaser.GameObjects.TileSprite;
   private buildingLayer!: Phaser.GameObjects.Container;
@@ -92,6 +99,11 @@ export class GameScene extends Phaser.Scene {
 
   private music?: Phaser.Sound.BaseSound;
 
+  // Pause + touch
+  private paused = false;
+  private pauseOverlay!: Phaser.GameObjects.Container;
+  private touch?: TouchControls;
+
   constructor() {
     super('GameScene');
   }
@@ -104,6 +116,8 @@ export class GameScene extends Phaser.Scene {
     this.enemies = [];
     this.props = [];
     this.droppedBats = [];
+    this.healthPickups = [];
+    this.paused = false;
     this.currentGate = 0;
     this.waveActive = false;
     this.boss = null;
@@ -144,16 +158,24 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0e0b16');
 
     this.buildHud();
+    this.buildPauseOverlay();
+
+    if (this.game.device.input.touch) {
+      this.touch = new TouchControls(this, this.controls);
+    }
 
     this.music = this.sound.add('music-brawler', { loop: true, volume: 0.32 });
     this.music.play();
 
-    this.input.keyboard?.on('keydown-ENTER', () => {
+    const leaveToMenu = () => {
       if (this.gameState !== 'play') {
         this.music?.stop();
         this.scene.start('MenuScene');
       }
-    });
+    };
+    this.input.keyboard?.on('keydown-ENTER', leaveToMenu);
+    // Tap anywhere on the game-over / stage-clear screen to continue (mobile).
+    this.input.on('pointerdown', leaveToMenu);
   }
 
   // ---------- setup helpers ----------
@@ -379,7 +401,10 @@ export class GameScene extends Phaser.Scene {
     const dt = Math.min(delta / 1000, 0.05);
     this.controls.update();
 
-    if (this.gameState !== 'play') {
+    if (this.gameState === 'play' && this.controls.pause) {
+      this.togglePause();
+    }
+    if (this.paused || this.gameState !== 'play') {
       return;
     }
 
@@ -390,16 +415,84 @@ export class GameScene extends Phaser.Scene {
       for (const e of this.enemies) {
         e.update(dt);
       }
+      this.separateEnemies();
     }
 
     this.clampFighters();
     this.resolveCombat();
     this.handleBatPickups();
+    this.handleHealthPickups();
     this.updateWaves();
     this.updateCamera(dt);
     this.updateParallax();
     this.updateHud();
     this.checkEndStates();
+  }
+
+  private togglePause(): void {
+    this.paused = !this.paused;
+    this.pauseOverlay.setVisible(this.paused);
+    if (this.paused) {
+      this.anims.pauseAll();
+      this.tweens.pauseAll();
+      this.music?.pause();
+    } else {
+      this.anims.resumeAll();
+      this.tweens.resumeAll();
+      this.music?.resume();
+    }
+  }
+
+  /** Soft-separate overlapping enemies so they fan out around the player. */
+  private separateEnemies(): void {
+    const movable = (e: Enemy) =>
+      e.alive &&
+      (e.state === 'idle' || e.state === 'walk' || e.state === 'run');
+    const minX = 58;
+    const minD = 0.12;
+    const list = this.enemies;
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
+      if (!movable(a)) continue;
+      for (let j = i + 1; j < list.length; j++) {
+        const b = list[j];
+        if (!movable(b)) continue;
+        const dx = b.x - a.x;
+        const dd = b.depth - a.depth;
+        if (Math.abs(dx) < minX && Math.abs(dd) < minD) {
+          const dir = (Math.abs(dx) < 0.001 ? Math.random() - 0.5 : dx) > 0 ? 1 : -1;
+          const step = Math.min((minX - Math.abs(dx)) * 0.25, 3);
+          a.x -= dir * step;
+          b.x += dir * step;
+          const dStep = 0.008;
+          if (dd >= 0) {
+            a.depth = Phaserish.clamp(a.depth - dStep, 0, 1);
+            b.depth = Phaserish.clamp(b.depth + dStep, 0, 1);
+          } else {
+            a.depth = Phaserish.clamp(a.depth + dStep, 0, 1);
+            b.depth = Phaserish.clamp(b.depth - dStep, 0, 1);
+          }
+        }
+      }
+    }
+  }
+
+  private handleHealthPickups(): void {
+    for (let i = this.healthPickups.length - 1; i >= 0; i--) {
+      const p = this.healthPickups[i];
+      if (
+        this.hero.alive &&
+        this.hero.hp < this.hero.maxHp &&
+        Math.abs(p.x - this.hero.x) < 48 &&
+        Math.abs(p.depth - this.hero.depth) < 0.25
+      ) {
+        this.hero.heal(p.amount);
+        this.playSfx('sfx-coin');
+        this.floatText(`+${p.amount}`, p.x, groundY(p.depth) - 96, '#49e08a');
+        p.obj.destroy();
+        this.healthPickups.splice(i, 1);
+      }
+    }
   }
 
   private clampFighters(): void {
@@ -564,6 +657,8 @@ export class GameScene extends Phaser.Scene {
         this.stageClear();
       } else {
         this.showBanner('GO!');
+        // Reward clearing a wave with a health pickup.
+        this.spawnHealth(this.camLock + GAME_WIDTH * 0.5, 0.7, 30);
       }
     }
   }
@@ -618,6 +713,100 @@ export class GameScene extends Phaser.Scene {
       .setScale(0.32 * depthScale(depth, 1, 0.32))
       .setDepth(Math.round(groundY(depth)) + 5);
     this.droppedBats.push({ x, depth, img });
+  }
+
+  private buildPauseOverlay(): void {
+    const c = this.add
+      .container(0, 0)
+      .setScrollFactor(0)
+      .setDepth(20000)
+      .setVisible(false);
+    const dim = this.add
+      .rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x0e0b16, 0.55)
+      .setOrigin(0, 0);
+    // Frosted-glass style panel.
+    const panel = this.add
+      .rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, 420, 200, 0xffffff, 0.08)
+      .setStrokeStyle(1.5, 0xffffff, 0.25);
+    const title = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 36, 'PAUSED', {
+        fontFamily: 'Impact, sans-serif',
+        fontSize: '56px',
+        color: '#ede9f4',
+        stroke: '#1a0f24',
+        strokeThickness: 6,
+      })
+      .setOrigin(0.5);
+    const tip = this.add
+      .text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 34, 'Esc or ❚❚ to resume', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        color: '#a99fc0',
+      })
+      .setOrigin(0.5);
+    c.add([dim, panel, title, tip]);
+    this.pauseOverlay = c;
+  }
+
+  /** Expanding ground ring + camera shake for the boss shockwave. */
+  spawnShockwave(x: number, depth: number): void {
+    const gy = groundY(depth);
+    const ring = this.add
+      .ellipse(x, gy, 70, 28, 0xffd23f, 0.12)
+      .setStrokeStyle(5, 0xffd23f, 0.9)
+      .setDepth(Math.round(gy) + 45);
+    this.tweens.add({
+      targets: ring,
+      scaleX: 6,
+      scaleY: 6,
+      alpha: 0,
+      duration: 360,
+      ease: 'Cubic.out',
+      onComplete: () => ring.destroy(),
+    });
+    this.cameras.main.shake(170, 0.013);
+    this.playSfx('sfx-boss-smash');
+  }
+
+  private spawnHealth(x: number, depth: number, amount: number): void {
+    const gy = groundY(depth);
+    const s = depthScale(depth, 1, 0.32);
+    const orb = this.add.circle(0, 0, 15, 0x123a22).setStrokeStyle(3, 0x49e08a);
+    const vBar = this.add.rectangle(0, 0, 4, 16, 0xffffff);
+    const hBar = this.add.rectangle(0, 0, 16, 4, 0xffffff);
+    const c = this.add
+      .container(x, gy - 24 * s, [orb, vBar, hBar])
+      .setScale(s)
+      .setDepth(Math.round(gy) + 6);
+    this.tweens.add({
+      targets: c,
+      y: c.y - 7,
+      duration: 650,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    });
+    this.healthPickups.push({ x, depth, amount, obj: c });
+  }
+
+  private floatText(text: string, x: number, y: number, color: string): void {
+    const t = this.add
+      .text(x, y, text, {
+        fontFamily: 'monospace',
+        fontSize: '22px',
+        color,
+        stroke: '#1a0f24',
+        strokeThickness: 4,
+      })
+      .setOrigin(0.5)
+      .setDepth(20000);
+    this.tweens.add({
+      targets: t,
+      y: y - 42,
+      alpha: 0,
+      duration: 700,
+      onComplete: () => t.destroy(),
+    });
   }
 
   private updateCamera(dt: number): void {

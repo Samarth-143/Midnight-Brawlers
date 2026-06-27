@@ -45,6 +45,23 @@ const BOSS_ATTACK: AttackDef = {
   lunge: 30,
 };
 
+// Close-range "get off me" move: chest-pound that releases a radial shockwave.
+const BOSS_SHOCKWAVE: AttackDef = {
+  action: 'chest-pound',
+  sfx: 'sfx-boss-pound',
+  fxKey: 'fx-boss-hit',
+  damage: 16,
+  reach: 132, // used as a radius (radial)
+  depthTol: 0.42,
+  knockback: 360,
+  launch: true,
+  activeStart: 0.55,
+  activeEnd: 0.8,
+  duration: 0.67,
+  lunge: 0,
+  radial: true,
+};
+
 export class Enemy extends Fighter {
   kind: EnemyKind;
   dropsBat: boolean;
@@ -113,13 +130,17 @@ export class Enemy extends Fighter {
       return;
     }
 
-    const def = this.attackDef;
     const dx = hero.x - this.x;
     const dist = Math.abs(dx);
     const ddepth = hero.depth - this.depth;
-
     this.facing = (dx >= 0 ? 1 : -1) as 1 | -1;
 
+    if (this.kind === 'boss') {
+      this.thinkBoss(dx, dist, ddepth);
+      return;
+    }
+
+    const def = this.attackDef;
     const inRange = dist <= def.reach * 0.78 + this.halfWidth;
     const aligned = Math.abs(ddepth) <= def.depthTol * 0.8;
 
@@ -128,8 +149,7 @@ export class Enemy extends Fighter {
       this.inputMoveDepth = 0;
       if (this.attackCooldown <= 0 && this.onGround()) {
         this.startAttack(def);
-        this.attackCooldown =
-          this.kind === 'boss' ? 1.1 + Math.random() * 0.6 : 0.9 + Math.random() * 1.0;
+        this.attackCooldown = 0.9 + Math.random() * 1.0;
       }
       return;
     }
@@ -143,6 +163,45 @@ export class Enemy extends Fighter {
     }
     this.inputMoveDepth = Math.abs(ddepth) > 0.04 ? (ddepth > 0 ? 1 : -1) : 0;
     this.wantRun = false;
+  }
+
+  private thinkBoss(dx: number, dist: number, ddepth: number): void {
+    const smash = BOSS_ATTACK;
+    const shock = BOSS_SHOCKWAVE;
+    const closeRadius = 120;
+
+    if (this.attackCooldown <= 0 && this.onGround()) {
+      // When the player crowds him, release a radial shockwave.
+      if (dist <= closeRadius && Math.abs(ddepth) <= shock.depthTol) {
+        this.doShockwave(shock);
+        this.attackCooldown = 1.6 + Math.random() * 0.6;
+        return;
+      }
+      // Otherwise a heavy overhead smash when lined up.
+      if (
+        dist <= smash.reach * 0.8 + this.halfWidth &&
+        Math.abs(ddepth) <= smash.depthTol * 0.85
+      ) {
+        this.startAttack(smash);
+        this.attackCooldown = 1.1 + Math.random() * 0.6;
+        return;
+      }
+    }
+
+    const standoff = smash.reach * 0.7;
+    this.inputMoveX = dist > standoff ? (dx > 0 ? 1 : -1) : 0;
+    this.inputMoveDepth = Math.abs(ddepth) > 0.04 ? (ddepth > 0 ? 1 : -1) : 0;
+    this.wantRun = false;
+  }
+
+  private doShockwave(def: AttackDef): void {
+    this.startAttack(def);
+    const delay = def.activeStart * def.duration * 1000;
+    this.scene.time.delayedCall(delay, () => {
+      if (this.state === 'attack' && this.currentAttack === def) {
+        this.scene.spawnShockwave(this.x, this.depth);
+      }
+    });
   }
 
   protected override applyTransform(): void {

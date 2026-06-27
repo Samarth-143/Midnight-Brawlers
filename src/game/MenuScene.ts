@@ -55,7 +55,7 @@ export class MenuScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.theme = this.sound.add('music-theme', { loop: true, volume: 0.4 });
-    // Browsers block autoplay until a user gesture; start on key/click.
+    // Browsers block autoplay until a user gesture; start on key/tap.
     const start = () => {
       this.theme?.stop();
       this.sound.play('sfx-confirm');
@@ -63,15 +63,7 @@ export class MenuScene extends Phaser.Scene {
     };
     this.input.keyboard?.once('keydown-ENTER', start);
     this.input.keyboard?.once('keydown-SPACE', start);
-    this.input.once('pointerdown', () => {
-      if (this.theme && !this.theme.isPlaying) {
-        this.theme.play();
-      }
-    });
-    this.input.keyboard?.once('keydown', () => {
-      if (this.theme && !this.theme.isPlaying) {
-        this.theme.play();
-      }
-    });
+    // Tap to start (mobile / mouse).
+    this.input.once('pointerdown', start);
   }
 }

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 
-/** Tracks held + just-pressed state for the gameplay controls. */
+type PulseName = 'jump' | 'light' | 'heavy' | 'kick' | 'pause';
+
+/** Tracks held + just-pressed state, merging keyboard and on-screen touch. */
 export class Controls {
   private keys: Record<string, Phaser.Input.Keyboard.Key>;
 
@@ -14,6 +16,19 @@ export class Controls {
   light = false;
   heavy = false;
   kick = false;
+  pause = false;
+
+  // Set by the on-screen touch controls (analog stick + buttons).
+  touchDirX = 0;
+  touchDirZ = 0;
+  touchRun = false;
+  private pulses: Record<PulseName, boolean> = {
+    jump: false,
+    light: false,
+    heavy: false,
+    kick: false,
+    pause: false,
+  };
 
   constructor(scene: Phaser.Scene) {
     const kb = scene.input.keyboard!;
@@ -32,9 +47,15 @@ export class Controls {
         j: Phaser.Input.Keyboard.KeyCodes.J,
         k: Phaser.Input.Keyboard.KeyCodes.K,
         l: Phaser.Input.Keyboard.KeyCodes.L,
+        esc: Phaser.Input.Keyboard.KeyCodes.ESC,
       },
       false
     ) as Record<string, Phaser.Input.Keyboard.Key>;
+  }
+
+  /** Fire a one-shot action from the touch UI; consumed on the next update. */
+  pressPulse(name: PulseName): void {
+    this.pulses[name] = true;
   }
 
   private justDown(key: Phaser.Input.Keyboard.Key): boolean {
@@ -44,16 +65,23 @@ export class Controls {
   /** Call once per frame before reading. */
   update(): void {
     const k = this.keys;
-    this.left = k.left.isDown || k.a.isDown;
-    this.right = k.right.isDown || k.d.isDown;
-    this.up = k.up.isDown || k.w.isDown;
-    this.down = k.down.isDown || k.s.isDown;
-    this.run = k.shift.isDown;
+    const tx = this.touchDirX;
+    const tz = this.touchDirZ;
 
-    // Edge-triggered actions.
-    this.jump = this.justDown(k.space);
-    this.light = this.justDown(k.j);
-    this.heavy = this.justDown(k.k);
-    this.kick = this.justDown(k.l);
+    this.left = k.left.isDown || k.a.isDown || tx < -0.3;
+    this.right = k.right.isDown || k.d.isDown || tx > 0.3;
+    this.up = k.up.isDown || k.w.isDown || tz < -0.3;
+    this.down = k.down.isDown || k.s.isDown || tz > 0.3;
+    this.run = k.shift.isDown || this.touchRun;
+
+    // Edge-triggered actions (keyboard JustDown OR a consumed touch pulse).
+    const p = this.pulses;
+    this.jump = this.justDown(k.space) || p.jump;
+    this.light = this.justDown(k.j) || p.light;
+    this.heavy = this.justDown(k.k) || p.heavy;
+    this.kick = this.justDown(k.l) || p.kick;
+    this.pause = this.justDown(k.esc) || p.pause;
+
+    p.jump = p.light = p.heavy = p.kick = p.pause = false;
   }
 }
