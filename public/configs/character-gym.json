@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "savedAt": "template-v3",
+  "character": {
+    "id": "hero-v2",
+    "gym": {
+      "characterId": "hero-v2",
+      "animationKey": "hero-v2-idle",
+      "frame": 0,
+      "playbackSpeed": 1,
+      "selectedBoundsKind": "visual",
+      "boundsOverrides": {}
+    }
+  }
+}

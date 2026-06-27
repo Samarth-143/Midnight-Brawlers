@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "savedAt": "2026-05-28T15:31:28.472Z",
+  "background": {
+    "id": "quest-parallax",
+    "selectedLayerKey": "quest-far",
+    "layers": [
+      {
+        "key": "quest-far",
+        "label": "Far",
+        "url": "/assets/backgrounds/quest-far.png",
+        "depth": 0,
+        "visible": true,
+        "speedFactor": 0.25,
+        "offsetX": 0,
+        "offsetY": 137,
+        "scale": 1,
+        "alpha": 1
+      },
+      {
+        "key": "quest-mid",
+        "label": "Medium",
+        "url": "/assets/backgrounds/quest-mid.png",
+        "depth": 1,
+        "visible": true,
+        "speedFactor": 0.75,
+        "offsetX": 0,
+        "offsetY": 18,
+        "scale": 1,
+        "alpha": 1
+      },
+      {
+        "key": "quest-foreground",
+        "label": "Foreground",
+        "url": "/assets/backgrounds/quest-foreground.png",
+        "depth": 10,
+        "visible": true,
+        "speedFactor": 1.4,
+        "offsetX": 0,
+        "offsetY": 0,
+        "scale": 1,
+        "alpha": 0.72
+      }
+    ]
+  }
+}

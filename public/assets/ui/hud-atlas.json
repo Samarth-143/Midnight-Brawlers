@@ -1,0 +1,70 @@
+{
+  "image": "assets/ui/hud-atlas.png",
+  "size": {
+    "w": 1024,
+    "h": 768
+  },
+  "note": "Single composite HUD sheet (Streets of Rage style, GPT Image 2.0). Background keyed transparent and bar interiors punched out to true transparency. Draw a colored fill rect behind each frame inside its fillZone, cropped to health%; the chrome frame renders on top and the depleted remainder shows through as empty.",
+  "frames": {
+    "player_portrait": {
+      "x": 27,
+      "y": 25,
+      "w": 253,
+      "h": 275
+    },
+    "player_health_frame": {
+      "x": 302,
+      "y": 89,
+      "w": 712,
+      "h": 122,
+      "fillZone": {
+        "x": 382,
+        "y": 119,
+        "w": 552,
+        "h": 62
+      }
+    },
+    "punk_portrait": {
+      "x": 30,
+      "y": 317,
+      "w": 144,
+      "h": 148
+    },
+    "punk_health_frame": {
+      "x": 213,
+      "y": 368,
+      "w": 270,
+      "h": 58,
+      "fillZone": {
+        "x": 236,
+        "y": 381,
+        "w": 224,
+        "h": 32
+      }
+    },
+    "boss_portrait": {
+      "x": 15,
+      "y": 496,
+      "w": 194,
+      "h": 201
+    },
+    "boss_health_frame": {
+      "x": 220,
+      "y": 561,
+      "w": 349,
+      "h": 96,
+      "fillZone": {
+        "x": 260,
+        "y": 585,
+        "w": 268,
+        "h": 48
+      }
+    },
+    "go_arrow": {
+      "x": 578,
+      "y": 395,
+      "w": 428,
+      "h": 232
+    }
+  }
+}

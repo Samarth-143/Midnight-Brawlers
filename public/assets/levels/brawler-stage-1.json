@@ -1,0 +1,140 @@
+{
+  "version": 1,
+  "level": {
+    "version": 1,
+    "id": "brawler-stage-1",
+    "title": "Neon Street",
+    "width": 4240,
+    "bandMinFrac": 0.62,
+    "bandMaxFrac": 0.92,
+    "playerStart": {
+      "x": 368,
+      "depthFrac": 0.6
+    },
+    "background": {
+      "sky": "bg-sky",
+      "street": "bg-street",
+      "skyParallax": 0.3,
+      "buildingParallax": 0.86,
+      "skyVShift": 10,
+      "buildingVShift": 22,
+      "buildingScale": 0.58,
+      "buildingBaseOffset": 18,
+      "skyZoom": 1.2,
+      "skyShowY": 468,
+      "segments": [
+        {
+          "panel": "bg-bld-a",
+          "x": -32,
+          "yOffset": 49
+        },
+        {
+          "panel": "bg-bld-b",
+          "x": 925,
+          "yOffset": 32
+        },
+        {
+          "panel": "bg-bld-a",
+          "x": 1850,
+          "yOffset": 60
+        },
+        {
+          "panel": "bg-bld-garage",
+          "x": 2812,
+          "yOffset": 7
+        }
+      ]
+    },
+    "gates": [
+      {
+        "x": 1080,
+        "spawns": [
+          {
+            "depthFrac": 0.2204437862332598,
+            "x": 1276
+          },
+          {
+            "depthFrac": 1
+          },
+          {
+            "depthFrac": 0.6000000000000001,
+            "x": 138
+          }
+        ]
+      },
+      {
+        "x": 1780,
+        "spawns": [
+          {
+            "depthFrac": 0.2,
+            "x": 1833
+          },
+          {
+            "depthFrac": 1,
+            "x": 2039
+          },
+          {
+            "depthFrac": 0.85,
+            "x": 571,
+            "weapon": "bat"
+          }
+        ]
+      },
+      {
+        "x": 2440,
+        "spawns": [
+          {
+            "depthFrac": 0.3,
+            "hp": 150
+          },
+          {
+            "depthFrac": 0.7
+          }
+        ]
+      },
+      {
+        "x": 4093,
+        "spawns": [
+          {
+            "depthFrac": 0,
+            "x": 3688,
+            "hp": 400,
+            "type": "boss"
+          }
+        ]
+      }
+    ],
+    "props": [
+      {
+        "id": "trash-can",
+        "x": 511,
+        "depthFrac": 0.25552157662249425,
+        "scale": 0.5
+      },
+      {
+        "id": "oil-drum",
+        "x": 1125,
+        "depthFrac": 0.24787631668365626,
+        "scale": 0.52
+      },
+      {
+        "id": "wooden-crate",
+        "x": 1480,
+        "depthFrac": 0.4,
+        "scale": 0.48
+      },
+      {
+        "id": "mailbox",
+        "x": 2034,
+        "depthFrac": 0.3013931362555216,
+        "scale": 0.52
+      },
+      {
+        "id": "newspaper-box",
+        "x": 2360,
+        "depthFrac": 0.45,
+        "scale": 0.5
+      }
+    ]
+  }
+}

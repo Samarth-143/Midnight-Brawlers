@@ -1,0 +1,181 @@
+{
+  "name": "street-props",
+  "image": "street-props-atlas.png",
+  "size": {
+    "width": 1088,
+    "height": 608
+  },
+  "grid": {
+    "cols": 6,
+    "rows": 2
+  },
+  "coordinateSystem": "top-left pixels",
+  "notes": [
+    "Auto-sliced from concepts/street-props-atlas-v1-transparent.png via per-cell alpha bbox.",
+    "Each prop: top-row=normal, bottom-row=damaged. anchor bottom-center; hurt is local px within the normal frame."
+  ],
+  "props": [
+    {
+      "id": "trash-can",
+      "label": "Trash Can",
+      "anchor": {
+        "x": 0.5,
+        "y": 1
+      },
+      "normal": {
+        "x": 32,
+        "y": 45,
+        "width": 134,
+        "height": 205
+      },
+      "damaged": {
+        "x": 0,
+        "y": 331,
+        "width": 181,
+        "height": 217
+      },
+      "hurt": {
+        "x": 19,
+        "y": 82,
+        "width": 96,
+        "height": 123
+      },
+      "depthRadius": 22
+    },
+    {
+      "id": "oil-drum",
+      "label": "Oil Drum",
+      "anchor": {
+        "x": 0.5,
+        "y": 1
+      },
+      "normal": {
+        "x": 218,
+        "y": 46,
+        "width": 127,
+        "height": 203
+      },
+      "damaged": {
+        "x": 212,
+        "y": 333,
+        "width": 151,
+        "height": 225
+      },
+      "hurt": {
+        "x": 18,
+        "y": 81,
+        "width": 91,
+        "height": 122
+      },
+      "depthRadius": 22
+    },
+    {
+      "id": "fire-hydrant",
+      "label": "Fire Hydrant",
+      "anchor": {
+        "x": 0.5,
+        "y": 1
+      },
+      "normal": {
+        "x": 395,
+        "y": 41,
+        "width": 119,
+        "height": 211
+      },
+      "damaged": {
+        "x": 363,
+        "y": 323,
+        "width": 177,
+        "height": 234
+      },
+      "hurt": {
+        "x": 16,
+        "y": 84,
+        "width": 86,
+        "height": 127
+      },
+      "depthRadius": 22
+    },
+    {
+      "id": "mailbox",
+      "label": "Mailbox",
+      "anchor": {
+        "x": 0.5,
+        "y": 1
+      },
+      "normal": {
+        "x": 562,
+        "y": 44,
+        "width": 132,
+        "height": 215
+      },
+      "damaged": {
+        "x": 547,
+        "y": 328,
+        "width": 178,
+        "height": 217
+      },
+      "hurt": {
+        "x": 18,
+        "y": 86,
+        "width": 95,
+        "height": 129
+      },
+      "depthRadius": 22
+    },
+    {
+      "id": "newspaper-box",
+      "label": "Newspaper Box",
+      "anchor": {
+        "x": 0.5,
+        "y": 1
+      },
+      "normal": {
+        "x": 733,
+        "y": 39,
+        "width": 174,
+        "height": 225
+      },
+      "damaged": {
+        "x": 725,
+        "y": 327,
+        "width": 182,
+        "height": 241
+      },
+      "hurt": {
+        "x": 24,
+        "y": 90,
+        "width": 125,
+        "height": 135
+      },
+      "depthRadius": 22
+    },
+    {
+      "id": "wooden-crate",
+      "label": "Wooden Crate",
+      "anchor": {
+        "x": 0.5,
+        "y": 1
+      },
+      "normal": {
+        "x": 907,
+        "y": 77,
+        "width": 153,
+        "height": 175
+      },
+      "damaged": {
+        "x": 907,
+        "y": 353,
+        "width": 181,
+        "height": 207
+      },
+      "hurt": {
+        "x": 22,
+        "y": 70,
+        "width": 110,
+        "height": 105
+      },
+      "depthRadius": 22
+    }
+  ]
+}
