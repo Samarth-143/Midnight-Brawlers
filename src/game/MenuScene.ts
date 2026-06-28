@@ -57,6 +57,9 @@ export class MenuScene extends Phaser.Scene {
     this.theme = this.sound.add('music-theme', { loop: true, volume: 0.4 });
     // Browsers block autoplay until a user gesture; start on key/tap.
     const start = () => {
+      if (this.game.device.input.touch) {
+        this.enterImmersive();
+      }
       this.theme?.stop();
       this.sound.play('sfx-confirm');
       this.scene.start('GameScene');
@@ -65,5 +68,26 @@ export class MenuScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-SPACE', start);
     // Tap to start (mobile / mouse).
     this.input.once('pointerdown', start);
+  }
+
+  /** Go fullscreen and lock to landscape (best-effort; needs a user gesture). */
+  private enterImmersive(): void {
+    const el = document.documentElement as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void>;
+    };
+    const lock = () => {
+      const orientation = screen.orientation as ScreenOrientation & {
+        lock?: (o: string) => Promise<void>;
+      };
+      orientation?.lock?.('landscape').catch(() => {});
+    };
+    const req = el.requestFullscreen ?? el.webkitRequestFullscreen;
+    if (req) {
+      Promise.resolve(req.call(el))
+        .then(lock)
+        .catch(() => lock());
+    } else {
+      lock();
+    }
   }
 }

@@ -4,20 +4,29 @@ import { Controls } from './input';
 
 const DEPTH = 9000;
 
+interface ButtonSpec {
+  x: number;
+  y: number;
+  r: number;
+  label: string;
+  color: number;
+  press: () => void;
+}
+
 /**
- * On-screen controls for touch devices: a left analog stick for movement and a
- * cluster of action buttons on the right, plus a pause button. Writes directly
- * into the shared Controls instance so the Hero reads one unified input source.
+ * On-screen controls for touch devices: a glossy analog stick on the left and
+ * a neon action cluster on the right, plus a pause button. Writes directly into
+ * the shared Controls instance so the Hero reads one unified input source.
  */
 export class TouchControls {
   private scene: Phaser.Scene;
   private controls: Controls;
 
   private baseX = 120;
-  private baseY = GAME_HEIGHT - 110;
-  private radius = 62;
+  private baseY = GAME_HEIGHT - 116;
+  private radius = 64;
   private stickPointerId = -1;
-  private thumb!: Phaser.GameObjects.Arc;
+  private thumb!: Phaser.GameObjects.Container;
 
   constructor(scene: Phaser.Scene, controls: Controls) {
     this.scene = scene;
@@ -33,82 +42,114 @@ export class TouchControls {
   }
 
   private buildStick(): void {
+    const { baseX: x, baseY: y, radius: r } = this;
+    // Soft halo.
     this.scene.add
-      .circle(this.baseX, this.baseY, this.radius, 0xffffff, 0.08)
-      .setStrokeStyle(2, 0xffffff, 0.3)
+      .circle(x, y, r + 12, 0x46e0ff, 0.06)
+      .setScrollFactor(0)
+      .setDepth(DEPTH)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    // Base ring.
+    this.scene.add
+      .circle(x, y, r, 0x0e0b16, 0.32)
+      .setStrokeStyle(3, 0x46e0ff, 0.55)
       .setScrollFactor(0)
       .setDepth(DEPTH);
+    this.scene.add
+      .text(x, y + r + 14, 'MOVE', {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#7f8aa6',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(DEPTH);
+
+    // Glossy thumb (outer + inner highlight) in a container we can move.
+    const thumbBody = this.scene.add
+      .circle(0, 0, 30, 0xff5ca8, 0.75)
+      .setStrokeStyle(2, 0xffffff, 0.6);
+    const gloss = this.scene.add.circle(0, -8, 12, 0xffffff, 0.28);
     this.thumb = this.scene.add
-      .circle(this.baseX, this.baseY, 28, 0xff5ca8, 0.55)
-      .setStrokeStyle(2, 0xffffff, 0.5)
+      .container(x, y, [thumbBody, gloss])
       .setScrollFactor(0)
       .setDepth(DEPTH + 1);
   }
 
-  private button(
-    x: number,
-    y: number,
-    r: number,
-    label: string,
-    color: number,
-    onPress: () => void
-  ): void {
-    const circle = this.scene.add
-      .circle(x, y, r, color, 0.32)
-      .setStrokeStyle(2, 0xffffff, 0.4)
+  private makeButton(spec: ButtonSpec): void {
+    const { x, y, r, label, color } = spec;
+    const glow = this.scene.add
+      .circle(x, y, r + 7, color, 0.16)
       .setScrollFactor(0)
       .setDepth(DEPTH)
+      .setBlendMode(Phaser.BlendModes.ADD);
+    const body = this.scene.add
+      .circle(x, y, r, 0x0e0b16, 0.4)
+      .setStrokeStyle(3, color, 0.85)
+      .setScrollFactor(0)
+      .setDepth(DEPTH + 1)
       .setInteractive({ useHandCursor: true });
-    this.scene.add
+    const text = this.scene.add
       .text(x, y, label, {
-        fontFamily: 'monospace',
-        fontSize: '18px',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: `${Math.round(r * 0.42)}px`,
+        fontStyle: 'bold',
         color: '#ffffff',
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(DEPTH + 1);
+      .setDepth(DEPTH + 2);
 
-    circle.on('pointerdown', () => {
-      onPress();
+    body.on('pointerdown', () => {
+      spec.press();
+      glow.setAlpha(0.4);
       this.scene.tweens.add({
-        targets: circle,
-        scale: 0.85,
+        targets: [body, text],
+        scale: 0.86,
         duration: 70,
         yoyo: true,
+      });
+      this.scene.tweens.add({
+        targets: glow,
+        alpha: 0.16,
+        duration: 220,
       });
     });
   }
 
   private buildButtons(): void {
-    const rx = GAME_WIDTH - 78;
-    const by = GAME_HEIGHT - 78;
-    // Punch (primary), with kick / heavy / jump around it.
-    this.button(rx, by, 38, 'P', 0xff5ca8, () => this.controls.pressPulse('light'));
-    this.button(rx - 88, by - 6, 32, 'K', 0x46e0ff, () => this.controls.pressPulse('kick'));
-    this.button(rx - 30, by - 84, 30, 'H', 0xffd23f, () => this.controls.pressPulse('heavy'));
-    this.button(rx - 120, by - 78, 34, '↑', 0x49e08a, () => this.controls.pressPulse('jump'));
+    const bx = GAME_WIDTH - 96;
+    const by = GAME_HEIGHT - 92;
+    const specs: ButtonSpec[] = [
+      { x: bx, y: by, r: 42, label: 'PUNCH', color: 0xff5ca8, press: () => this.controls.pressPulse('light') },
+      { x: bx - 92, y: by - 8, r: 34, label: 'KICK', color: 0x46e0ff, press: () => this.controls.pressPulse('kick') },
+      { x: bx - 58, y: by - 88, r: 32, label: 'JUMP', color: 0x49e08a, press: () => this.controls.pressPulse('jump') },
+      { x: bx + 20, y: by - 80, r: 30, label: 'HVY', color: 0xffd23f, press: () => this.controls.pressPulse('heavy') },
+    ];
+    for (const s of specs) {
+      this.makeButton(s);
+    }
   }
 
   private buildPauseButton(): void {
     const x = GAME_WIDTH / 2;
-    const y = 26;
-    const circle = this.scene.add
-      .circle(x, y, 20, 0x000000, 0.35)
-      .setStrokeStyle(2, 0xffffff, 0.4)
+    const y = 28;
+    const body = this.scene.add
+      .circle(x, y, 20, 0x0e0b16, 0.4)
+      .setStrokeStyle(2, 0xffffff, 0.45)
       .setScrollFactor(0)
-      .setDepth(DEPTH)
+      .setDepth(DEPTH + 1)
       .setInteractive({ useHandCursor: true });
     this.scene.add
-      .text(x, y, 'II', {
+      .text(x, y, '❚❚', {
         fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#ffffff',
+        fontSize: '15px',
+        color: '#ede9f4',
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(DEPTH + 1);
-    circle.on('pointerdown', () => this.controls.pressPulse('pause'));
+      .setDepth(DEPTH + 2);
+    body.on('pointerdown', () => this.controls.pressPulse('pause'));
   }
 
   private wireStick(): void {
