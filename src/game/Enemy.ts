@@ -70,6 +70,7 @@ export class Enemy extends Fighter {
   private preferredSide = Math.random() < 0.5 ? -1 : 1;
   private hpBarBg?: Phaser.GameObjects.Rectangle;
   private hpBarFill?: Phaser.GameObjects.Rectangle;
+  private enraged = false;
   private static readonly BAR_W = 52;
   private static readonly BAR_H = 6;
 
@@ -86,15 +87,15 @@ export class Enemy extends Fighter {
       isBoss ? 'boss' : 'punk',
       x,
       depth,
-      opts.hp ?? (isBoss ? 400 : 60),
+      opts.hp ?? (isBoss ? 400 : opts.bat ? 90 : 60),
       isBoss ? 0.72 : 0.5
     );
     this.kind = kind;
     this.dropsBat = !!opts.bat;
     this.hasBat = !!opts.bat && !isBoss;
-    this.walkSpeed = isBoss ? 90 : 120 + Math.random() * 40;
+    this.walkSpeed = isBoss ? 120 : 120 + Math.random() * 40;
     this.runSpeed = this.walkSpeed;
-    this.depthSpeed = 0.9;
+    this.depthSpeed = isBoss ? 1.05 : 0.9;
 
     if (isBoss) {
       this.animLock = 1.4;
@@ -169,12 +170,13 @@ export class Enemy extends Fighter {
     const smash = BOSS_ATTACK;
     const shock = BOSS_SHOCKWAVE;
     const closeRadius = 120;
+    const cdMul = this.enraged ? 0.6 : 1;
 
     if (this.attackCooldown <= 0 && this.onGround()) {
       // When the player crowds him, release a radial shockwave.
       if (dist <= closeRadius && Math.abs(ddepth) <= shock.depthTol) {
         this.doShockwave(shock);
-        this.attackCooldown = 1.6 + Math.random() * 0.6;
+        this.attackCooldown = (1.1 + Math.random() * 0.5) * cdMul;
         return;
       }
       // Otherwise a heavy overhead smash when lined up.
@@ -183,7 +185,7 @@ export class Enemy extends Fighter {
         Math.abs(ddepth) <= smash.depthTol * 0.85
       ) {
         this.startAttack(smash);
-        this.attackCooldown = 1.1 + Math.random() * 0.6;
+        this.attackCooldown = (0.7 + Math.random() * 0.4) * cdMul;
         return;
       }
     }
@@ -192,6 +194,18 @@ export class Enemy extends Fighter {
     this.inputMoveX = dist > standoff ? (dx > 0 ? 1 : -1) : 0;
     this.inputMoveDepth = Math.abs(ddepth) > 0.04 ? (ddepth > 0 ? 1 : -1) : 0;
     this.wantRun = false;
+  }
+
+  /** Boss enters a faster, harder-hitting state (called at half HP). */
+  enrage(): void {
+    if (this.enraged) {
+      return;
+    }
+    this.enraged = true;
+    this.walkSpeed *= 1.35;
+    this.runSpeed = this.walkSpeed;
+    this.depthSpeed *= 1.3;
+    this.sprite.setTint(0xff7a7a);
   }
 
   private doShockwave(def: AttackDef): void {

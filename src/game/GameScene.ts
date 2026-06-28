@@ -83,6 +83,7 @@ export class GameScene extends Phaser.Scene {
   private scrollMin = 0;
   private scrollMax = 0;
   private boss: Enemy | null = null;
+  private bossReinforced = false;
 
   private soundVol: Record<string, number> = {};
 
@@ -121,6 +122,7 @@ export class GameScene extends Phaser.Scene {
     this.currentGate = 0;
     this.waveActive = false;
     this.boss = null;
+    this.bossReinforced = false;
     this.camLock = 0;
     this.boundLeft = 20;
     this.boundRight = GAME_WIDTH;
@@ -422,6 +424,7 @@ export class GameScene extends Phaser.Scene {
     this.resolveCombat();
     this.handleBatPickups();
     this.handleHealthPickups();
+    this.checkBossReinforcements();
     this.updateWaves();
     this.updateCamera(dt);
     this.updateParallax();
@@ -474,6 +477,33 @@ export class GameScene extends Phaser.Scene {
           }
         }
       }
+    }
+  }
+
+  /** Once the boss drops to half health, call in a punk squad (one armed). */
+  private checkBossReinforcements(): void {
+    if (this.bossReinforced || !this.boss || !this.boss.alive) {
+      return;
+    }
+    if (this.boss.hp <= this.boss.maxHp * 0.5) {
+      this.bossReinforced = true;
+      this.spawnReinforcements();
+      this.boss.enrage();
+      this.showBanner('REINFORCEMENTS!');
+    }
+  }
+
+  private spawnReinforcements(): void {
+    const squad = [true, false, false]; // one bat punk, two unarmed
+    for (let i = 0; i < squad.length; i++) {
+      const fromRight = i % 2 === 0;
+      const ex = Phaserish.clamp(
+        this.camLock + (fromRight ? GAME_WIDTH + 120 : -120),
+        30,
+        this.levelWidth - 30
+      );
+      const depth = 0.3 + Math.random() * 0.6;
+      this.enemies.push(new Enemy(this, 'punk', ex, depth, { bat: squad[i] }));
     }
   }
 
